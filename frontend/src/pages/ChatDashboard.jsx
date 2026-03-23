@@ -104,7 +104,10 @@ export default function ChatDashboard() {
       setUsers(response.data.data || []);
     } catch (error) {
       console.error("Error fetching users:", error);
-      alert("Error loading users: " + (error.response?.data?.message || error.message));
+      alert(
+        "Error loading users: " +
+          (error.response?.data?.message || error.message),
+      );
     } finally {
       setLoading(false);
     }
@@ -149,7 +152,7 @@ export default function ChatDashboard() {
 
       setMessageText("");
       setTypingUsers(new Set()); // Clear typing indicator
-      
+
       // Fetch fresh messages to sync with database
       setTimeout(() => {
         fetchMessages(selectedUser._id);
