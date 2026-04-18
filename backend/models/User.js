@@ -39,11 +39,60 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
+    // ── Security fields (new) ──────────────────────────────────
+    // Asymmetric signing keys for message attribution
+    signingPublicKey: {
+      type: String,
+      default: null,
+    },
+    signingPrivateKey: {
+      type: String,
+      select: false, // Never expose private key in queries by default
+      default: null,
+    },
+    publicKeyVersion: {
+      type: Number,
+      default: 0,
+    },
+
+    // E2EE encryption public key (JWK format stored as JSON string)
+    // Private key NEVER leaves the client browser
+    encryptionPublicKey: {
+      type: String,
+      default: null,
+    },
+
+    // Account lockout
+    failedLoginCount: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
+
+    // Last known access metadata (hashed for privacy)
+    lastLoginIpHash: {
+      type: String,
+      default: null,
+    },
+    lastUserAgentHash: {
+      type: String,
+      default: null,
+    },
+
+    // Security preferences
+    securityPreferences: {
+      notifyOnNewDevice: { type: Boolean, default: true },
+      notifyOnSuspiciousActivity: { type: Boolean, default: true },
+    },
   },
   { timestamps: true },
 );
 
-// Hash password before saving
+// Hash password before saving - bcrypt stays for passwords
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     next();
@@ -53,9 +102,14 @@ userSchema.pre("save", async function (next) {
   this.password = await bcryptjs.hash(this.password, salt);
 });
 
-// Method to compare passwords
+// Method to compare passwords using bcrypt
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcryptjs.compare(enteredPassword, this.password);
+};
+
+// Check if account is currently locked
+userSchema.methods.isLocked = function () {
+  return this.lockUntil && this.lockUntil > new Date();
 };
 
 const User = mongoose.model("User", userSchema);

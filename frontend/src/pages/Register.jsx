@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { authService } from "../services/api";
+import { authService, userService } from "../services/api";
+import { setAccessToken, setUser } from "../services/authSession";
+import { initSocket } from "../services/socket";
+import { bootstrapE2EEKeys, hasLocalKeys } from "../services/e2eeService";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -12,6 +15,7 @@ export default function Register() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -26,9 +30,22 @@ export default function Register() {
     setLoading(true);
 
     try {
+      setStatus("Creating account...");
       const response = await authService.register(formData);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+      // Store access token (refresh token is in HttpOnly cookie)
+      setAccessToken(response.data.accessToken);
+      setUser(response.data.user);
+
+      // Generate E2EE encryption key pair
+      setStatus("Generating encryption keys...");
+      await bootstrapE2EEKeys(async (publicKeyJwk) => {
+        await userService.uploadEncryptionKey(publicKeyJwk);
+      });
+
+      // Initialize authenticated socket
+      setStatus("Connecting...");
+      initSocket();
+
       navigate("/chat");
     } catch (err) {
       setError(
@@ -36,15 +53,19 @@ export default function Register() {
       );
     } finally {
       setLoading(false);
+      setStatus("");
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-blue-700">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
           Create Account
         </h2>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          🔐 End-to-end encryption keys generated on your device
+        </p>
 
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
@@ -121,7 +142,7 @@ export default function Register() {
             disabled={loading}
             className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition duration-200"
           >
-            {loading ? "Creating Account..." : "Register"}
+            {loading ? status || "Creating Account..." : "Register"}
           </button>
         </form>
 

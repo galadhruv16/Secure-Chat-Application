@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { authService } from "../services/api";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { authService, userService } from "../services/api";
+import { setAccessToken, setUser } from "../services/authSession";
+import { initSocket } from "../services/socket";
+import { hasLocalKeys, bootstrapE2EEKeys } from "../services/e2eeService";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [error, setError] = useState("");
+  const [securityNotice, setSecurityNotice] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check if redirected due to session revocation
+  const reason = searchParams.get("reason");
 
   const handleChange = (e) => {
     setFormData({
@@ -21,17 +29,43 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSecurityNotice("");
     setLoading(true);
 
     try {
       const response = await authService.login(formData);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+      // Store access token (refresh token is in HttpOnly cookie)
+      setAccessToken(response.data.accessToken);
+      setUser(response.data.user);
+
+      // Show security notice if login from new device
+      if (response.data.securityNotice) {
+        setSecurityNotice(response.data.securityNotice);
+      }
+
+      // Bootstrap E2EE keys if not present on this device
+      if (!hasLocalKeys()) {
+        try {
+          await bootstrapE2EEKeys(async (publicKeyJwk) => {
+            await userService.uploadEncryptionKey(publicKeyJwk);
+          });
+        } catch (e2eeErr) {
+          console.warn("E2EE key bootstrap failed:", e2eeErr);
+          // Don't block login for E2EE key issues
+        }
+      }
+
+      // Initialize authenticated socket
+      initSocket();
+
       navigate("/chat");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Login failed. Please try again.",
-      );
+      const code = err.response?.data?.code;
+      if (code === "ACCOUNT_LOCKED") {
+        setError(err.response?.data?.message || "Account is locked. Try again later.");
+      } else {
+        setError(err.response?.data?.message || "Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -40,13 +74,28 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-blue-700">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-          Secure Chat
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
+          🔒 Secure Chat
         </h2>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          End-to-end encrypted messaging
+        </p>
+
+        {reason === "session-revoked" && (
+          <div className="mb-4 p-3 bg-orange-100 text-orange-700 rounded text-sm">
+            ⚠ Your session was revoked. Please login again.
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
             {error}
+          </div>
+        )}
+
+        {securityNotice && (
+          <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded text-sm">
+            🛡️ {securityNotice}
           </div>
         )}
 

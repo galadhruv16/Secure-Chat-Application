@@ -8,20 +8,20 @@ import {
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ChatDashboard from "./pages/ChatDashboard";
+import Sessions from "./pages/Sessions";
+import SecurityCenter from "./pages/SecurityCenter";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { initSocket, disconnectSocket } from "./services/socket";
+import { isAuthenticated } from "./services/authSession";
 import "./index.css";
 
 function App() {
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // Initialize socket when user is authenticated
+    if (isAuthenticated()) {
       initSocket();
     }
 
     return () => {
-      // Cleanup on unmount
       disconnectSocket();
     };
   }, []);
@@ -36,6 +36,22 @@ function App() {
           element={
             <ProtectedRoute>
               <ChatDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sessions"
+          element={
+            <ProtectedRoute>
+              <Sessions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/security"
+          element={
+            <ProtectedRoute>
+              <SecurityCenter />
             </ProtectedRoute>
           }
         />

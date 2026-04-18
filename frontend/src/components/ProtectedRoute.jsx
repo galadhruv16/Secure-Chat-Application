@@ -1,15 +1,20 @@
+/**
+ * Updated ProtectedRoute component.
+ * Uses new auth session management and handles forced re-authentication.
+ */
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { isAuthenticated } from "../services/authSession";
 
 export default function ProtectedRoute({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!isAuthenticated()) {
       navigate("/login");
     }
   }, [navigate]);
 
-  return localStorage.getItem("token") ? children : null;
+  return isAuthenticated() ? children : null;
 }
