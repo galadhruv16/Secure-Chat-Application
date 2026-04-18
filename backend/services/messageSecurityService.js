@@ -17,11 +17,11 @@ import {
 } from "./signatureService.js";
 
 const HMAC_SECRET =
-  process.env.MESSAGE_HMAC_SECRET
-  || process.env.JWT_SECRET
-  || process.env.JWT_ACCESS_SECRET
-  || process.env.JWT_REFRESH_SECRET
-  || "dev-message-hmac-secret-change-me";
+  process.env.MESSAGE_HMAC_SECRET ||
+  process.env.JWT_SECRET ||
+  process.env.JWT_ACCESS_SECRET ||
+  process.env.JWT_REFRESH_SECRET ||
+  "dev-message-hmac-secret-change-me";
 
 /**
  * Prepare security fields for a new message before persistence.

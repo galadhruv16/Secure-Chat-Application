@@ -16,9 +16,11 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const isAuthConnectError = (message = "") => {
   const normalized = message.toLowerCase();
-  return normalized.includes("token expired")
-    || normalized.includes("authentication failed")
-    || normalized.includes("authentication required");
+  return (
+    normalized.includes("token expired") ||
+    normalized.includes("authentication failed") ||
+    normalized.includes("authentication required")
+  );
 };
 
 const refreshSocketAccessToken = async () => {

@@ -158,9 +158,8 @@ export default function ChatDashboard() {
 
       if (isEncrypted) {
         try {
-          const aesKeyToUse = senderId === myUserId
-            ? senderEncryptedAESKey
-            : encryptedAESKey;
+          const aesKeyToUse =
+            senderId === myUserId ? senderEncryptedAESKey : encryptedAESKey;
 
           if (!privateKeyRef.current || !aesKeyToUse || !e2eeIV) {
             decryptedText = null;

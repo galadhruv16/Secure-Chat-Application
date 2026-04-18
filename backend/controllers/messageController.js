@@ -7,7 +7,10 @@
 
 import Message from "../models/Message.js";
 import User from "../models/User.js";
-import { prepareMessageSecurity, verifyMessage } from "../services/messageSecurityService.js";
+import {
+  prepareMessageSecurity,
+  verifyMessage,
+} from "../services/messageSecurityService.js";
 import { appendAuditLog } from "../services/auditService.js";
 import { AUDIT_EVENTS } from "../config/security.js";
 
@@ -66,7 +69,7 @@ export const sendMessage = async (req, res) => {
       messageData.encryptedAESKey = encryptedAESKey;
       messageData.senderEncryptedAESKey = senderEncryptedAESKey;
       messageData.e2eeIV = e2eeIV;
-      messageData.encryptionAlgorithm = 'RSA-OAEP+AES-256-GCM';
+      messageData.encryptionAlgorithm = "RSA-OAEP+AES-256-GCM";
     }
 
     const message = await Message.create(messageData);
@@ -158,7 +161,7 @@ export const getMessages = async (req, res) => {
             });
 
             // Log verification failures
-            if (verification.status === 'failed') {
+            if (verification.status === "failed") {
               await appendAuditLog({
                 eventType: verification.integrityValid
                   ? AUDIT_EVENTS.MESSAGE_SIGNATURE_FAILURE
@@ -179,11 +182,11 @@ export const getMessages = async (req, res) => {
           msgObj.verificationResult = {
             integrityValid: false,
             signatureValid: false,
-            status: 'error',
+            status: "error",
           };
         }
         return msgObj;
-      })
+      }),
     );
 
     res.status(200).json({

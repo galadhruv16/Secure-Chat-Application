@@ -7,8 +7,14 @@ import { Server } from "socket.io";
 import connectDB from "./config/database.js";
 import { errorHandler } from "./middleware/auth.js";
 import { securityContext } from "./middleware/securityContext.js";
-import { securityMonitor, auditFailedAccess } from "./middleware/securityMonitor.js";
-import { socketAuthMiddleware, validateSocketSession } from "./middleware/socketAuth.js";
+import {
+  securityMonitor,
+  auditFailedAccess,
+} from "./middleware/securityMonitor.js";
+import {
+  socketAuthMiddleware,
+  validateSocketSession,
+} from "./middleware/socketAuth.js";
 import { generalLimiter } from "./middleware/rateLimit.js";
 
 // Import routes
@@ -27,10 +33,12 @@ const server = http.createServer(app);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
 // Middleware
-app.use(cors({
-  origin: FRONTEND_ORIGIN,
-  credentials: true, // Required for cookies
-}));
+app.use(
+  cors({
+    origin: FRONTEND_ORIGIN,
+    credentials: true, // Required for cookies
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
